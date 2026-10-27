@@ -9,7 +9,6 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
-from urllib.parse import urlsplit
 
 from flask import (
     Flask, abort, flash, g, redirect, render_template, request,
@@ -24,8 +23,6 @@ UPLOAD_DIR = BASE_DIR / "uploads"
 INSTANCE_DIR.mkdir(exist_ok=True)
 UPLOAD_DIR.mkdir(exist_ok=True)
 
-# IMPORTANT: Set FLASK_SECRET_KEY to a long random value in Render's
-# Environment settings. A generated fallback is for local development only.
 app = Flask(__name__)
 app.config.update(
     SECRET_KEY=os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32),
@@ -36,7 +33,25 @@ app.config.update(
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
     DATABASE=os.environ.get("VERIFYAI_DATABASE", str(INSTANCE_DIR / "verifyai.db")),
 )
-ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg", "txt"}
+ALLOWED_EXTENSIONS = {"pdf", "png", "jpg", "jpeg"}
+APPLICATION_RULES = {
+    "Extension of Approval (EoA)": ["institution", "approval"],
+    "New Institution Approval": ["institution", "approval"],
+    "Change in Intake / Courses": ["institution", "course"],
+    "Institutional Details Change": ["institution", "address"],
+    "Faculty Supporting Documents": ["name", "qualification"],
+    "Affiliation / Approval Supporting Records": ["institution", "approval"],
+    "Infrastructure Supporting Documents": ["institution", "infrastructure"],
+}
+
+def matches_file_signature(extension, data):
+    if extension == "pdf":
+        return data.startswith(b"%PDF-") and b"%%EOF" in data[-4096:]
+    if extension == "png":
+        return data.startswith(b"\x89PNG\r\n\x1a\n")
+    if extension in {"jpg", "jpeg"}:
+        return data.startswith(b"\xff\xd8\xff") and data.rstrip().endswith(b"\xff\xd9")
+    return False
 ALLOWED_STATUSES = {"Submitted", "Under Review", "Needs Correction", "Approved", "Rejected"}
 LOGIN_FAILURES = {}
 MAX_LOGIN_FAILURES = 5
@@ -150,54 +165,13 @@ def csrf_token():
 
 app.jinja_env.globals["csrf_token"] = csrf_token
 
-def is_same_origin_post():
-    """
-    Compatibility fallback for existing HTML forms that do not yet include
-    a hidden _csrf_token field. A browser must provide a matching Origin or
-    Referer host. Keep token validation as the preferred path.
-    """
-    expected_host = request.host.lower()
-
-    origin = request.headers.get("Origin", "").strip()
-    if origin:
-        try:
-            return urlsplit(origin).netloc.lower() == expected_host
-        except ValueError:
-            return False
-
-    referer = request.headers.get("Referer", "").strip()
-    if referer:
-        try:
-            return urlsplit(referer).netloc.lower() == expected_host
-        except ValueError:
-            return False
-
-    return False
-
-
 @app.before_request
 def security_and_csrf():
     if request.method == "POST":
         sent = request.form.get("_csrf_token", "")
         expected = session.get("_csrf_token", "")
-
-        # Preferred protection: validate the session-bound CSRF token.
-        token_is_valid = (
-            bool(sent) and bool(expected)
-            and hmac.compare_digest(sent, expected)
-        )
-
-        # Existing templates may not all have the hidden token field yet.
-        # In that case, allow only browser POSTs with a same-origin Origin or
-        # Referer header; reject requests with neither header.
-        if not token_is_valid and not is_same_origin_post():
-            abort(
-                400,
-                description=(
-                    "Security token missing or expired. Refresh the page and try again."
-                ),
-            )
-
+        if not sent or not expected or not hmac.compare_digest(sent, expected):
+            abort(400, description="Security token missing or expired. Refresh the page and try again.")
     if session.get("user_id"):
         session.permanent = True
         session["last_seen"] = int(time.time())
@@ -208,14 +182,14 @@ def security_and_csrf():
 @app.after_request
 def security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
+    # Google Sites embedding is allowed for this demonstration prototype.
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Cache-Control"] = "no-store"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; img-src 'self' data:; style-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
         "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net; script-src 'self' https://cdn.jsdelivr.net; "
-        "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+        "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self' https://sites.google.com https://*.google.com; form-action 'self'"
     )
     return response
 
@@ -304,57 +278,134 @@ def score_findings(findings):
     return score, level
 
 def analyze_text(text, application_type, file_hash, db):
+    """Explainable, rule-based triage. Flags are leads for review, never proof of fraud."""
     findings = []
-    lowered = text.lower()
-    if not text.strip():
-        findings.append({"severity":"medium","code":"NO_TEXT","title":"No readable text extracted",
-                         "detail":"The file did not yield readable text. OCR may be unavailable or the document may be image-only.",
-                         "recommendation":"Use a text-based PDF, install Tesseract for image OCR, or request a readable copy."})
-    required = {
-        "Institution Registration": ["institution", "registration"],
-        "Faculty Credential": ["name", "qualification"],
-        "Annual Compliance": ["institution", "year"],
-        "General Application": ["name", "date"],
-    }.get(application_type, ["name", "date"])
-    missing = [field for field in required if field not in lowered]
-    if missing:
-        findings.append({"severity":"medium","code":"MISSING_FIELD","title":"Expected information not detected",
-                         "detail":"The text extractor did not find these expected terms: " + ", ".join(missing) + ". This may be an OCR or document-layout issue, not proof of an omission.",
-                         "recommendation":"Review the original document and confirm whether the required information is present."})
-    expiry_patterns = re.findall(r"(?:expiry|expires|valid\s+until|validity)\s*[:\-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})", text, flags=re.I)
-    if expiry_patterns:
-        for date_value in expiry_patterns:
-            parsed = None
-            for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y", "%m-%d-%Y", "%d/%m/%y", "%d-%m-%y"):
-                try:
-                    parsed = datetime.strptime(date_value, fmt).date()
-                    break
-                except ValueError:
-                    pass
-            if parsed:
-                days = (parsed - datetime.now().date()).days
-                if days < 0:
-                    findings.append({"severity":"high","code":"EXPIRED_DATE","title":"Possible expired validity date",
-                                     "detail":f"The extracted date {date_value} appears to be in the past.",
-                                     "recommendation":"Confirm the date format and issuing authority; request a current document if confirmed."})
-                elif days <= 60:
-                    findings.append({"severity":"medium","code":"EXPIRY_SOON","title":"Validity date is approaching",
-                                     "detail":f"The extracted date {date_value} is within the next 60 days.",
-                                     "recommendation":"Confirm the date and plan renewal if applicable."})
-    if re.search(r"\b(sample|demo|specimen|not for official use)\b", lowered):
-        findings.append({"severity":"low","code":"SAMPLE_MARKER","title":"Sample or specimen marker found",
-                         "detail":"The text contains a sample/demo/specimen marker.",
-                         "recommendation":"Ensure the file is not a sample when reviewing a real submission."})
+    raw = text or ""
+    lowered = raw.lower()
+
+    def add(severity, code, title, reason, evidence, action, source="Extracted document text"):
+        findings.append({
+            "severity": severity, "code": code, "title": title,
+            "detail": reason, "evidence": evidence or "No matching text could be extracted.",
+            "recommendation": action, "source": source,
+            "status": "Needs human confirmation"
+        })
+
+    if not raw.strip():
+        add("medium", "NO_TEXT", "No readable text extracted",
+            "The system received a file but could not extract readable text. This can happen with scanned PDFs, low-resolution images, or unsupported OCR setup; it does not by itself indicate a defective document.",
+            "Extracted text length: 0 characters.",
+            "Open the original file. For scanned PDFs, enable OCR (for example Tesseract) in the deployment environment or request a searchable PDF.")
+
+    # Category-specific, configurable keyword checks; these are preliminary text checks only.
+    category_terms = {
+        "Extension of Approval (EoA)": [
+            ("institution name", r"institution|college|institute"),
+            ("application / approval reference", r"application\s*(id|no|number)|reference\s*(id|no|number)|approval\s*(id|no|number)"),
+            ("academic year", r"academic\s+year|20\d{2}\s*[-–/]\s*20\d{2}"),
+            ("approval / EoA context", r"extension\s+of\s+approval|\beoa\b|approval"),
+        ],
+        "New Institution Approval": [
+            ("institution name", r"institution|college|institute"),
+            ("application reference", r"application\s*(id|no|number)|reference\s*(id|no|number)"),
+            ("academic year", r"academic\s+year|20\d{2}\s*[-–/]\s*20\d{2}"),
+        ],
+        "Change in Intake / Courses": [
+            ("institution name", r"institution|college|institute"),
+            ("course / programme", r"course|programme|program|discipline|b\.tech|bachelor"),
+            ("intake / seats", r"intake|seats|approved strength|capacity"),
+        ],
+        "Institutional Details Change": [
+            ("institution name", r"institution|college|institute"),
+            ("address / location", r"address|district|state|location|pin\s*code"),
+            ("change request", r"change|amendment|correction|update"),
+        ],
+        "Faculty Supporting Documents": [
+            ("faculty name", r"faculty|name\s*[:\-]|professor|lecturer"),
+            ("qualification", r"qualification|degree|ph\.d|m\.tech|b\.tech"),
+        ],
+        "Affiliation / Approval Supporting Records": [
+            ("institution name", r"institution|college|institute"),
+            ("approval / affiliation reference", r"approval|affiliation|reference\s*(id|no|number)|certificate"),
+        ],
+        "Infrastructure Supporting Documents": [
+            ("institution name", r"institution|college|institute"),
+            ("infrastructure evidence term", r"floor\s*plan|built.?up\s+area|laboratory|classroom|library|infrastructure|building"),
+        ],
+    }
+    expected = category_terms.get(application_type, [("institution name", r"institution|college|institute")])
+    missing = [label for label, pattern in expected if not re.search(pattern, lowered, flags=re.I)]
+    for label in missing:
+        add("medium", "MISSING_FIELD", f"Expected information not detected: {label}",
+            f"The configured checklist for '{application_type}' expects '{label}', but the text extractor did not find a matching term. Layout differences or OCR errors can cause false flags.",
+            f"Checklist item: {label}. Search result: no match in {min(len(raw), 100000)} extracted characters.",
+            f"Review the original file for {label}. If present, correct the OCR/text extraction or record the evidence during manual review.")
+
+    # Date / validity checks. Ambiguous date formats are deliberately not auto-decided.
+    date_hits = re.findall(r"(?:expiry|expires|valid\s+until|validity\s*(?:date)?|valid\s*up\s*to)\s*[:\-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})", raw, flags=re.I)
+    for date_value in date_hits:
+        parsed = None
+        for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y", "%m-%d-%Y", "%d/%m/%y", "%d-%m-%y"):
+            try:
+                parsed = datetime.strptime(date_value, fmt).date(); break
+            except ValueError:
+                pass
+        if not parsed:
+            add("medium", "DATE_PARSE_REVIEW", "Validity date needs manual interpretation",
+                "A validity-related date was extracted but could not be parsed safely.",
+                f"Matched validity date: {date_value}.",
+                "Check the date on the original document and confirm the issuing authority's date format.")
+        else:
+            days = (parsed - datetime.now().date()).days
+            if days < 0:
+                add("high", "EXPIRED_DATE", "Possible expired validity date",
+                    "A date found next to a validity/expiry label appears to be in the past. The date format and the document's applicability must be confirmed by a person.",
+                    f"Extracted validity date: {date_value}; interpreted date: {parsed.isoformat()}; days from today: {days}.",
+                    "Confirm the date format and issuing authority. If the document is truly expired, request a current version according to the applicable rules.")
+            elif days <= 60:
+                add("medium", "EXPIRY_SOON", "Validity date is approaching",
+                    "The extracted validity date falls within the next 60 days.",
+                    f"Extracted validity date: {date_value}; interpreted date: {parsed.isoformat()}; days remaining: {days}.",
+                    "Confirm the date on the original document and determine whether renewal is required.")
+
+    # Obvious sample markers are useful in demo evaluation.
+    if re.search(r"\b(sample|demo|specimen|not for official use|fictional)\b", lowered):
+        add("low", "SAMPLE_MARKER", "Sample / demo marker detected",
+            "The document contains wording commonly used on demonstration or specimen records.",
+            "Matched one of: sample, demo, specimen, not for official use, fictional.",
+            "Use only synthetic data in the demo. For a real application, verify the submitted record through an authorized source.")
+
     if file_hash:
-        prior = db.execute("SELECT reference FROM cases WHERE file_hash=? AND file_hash<>'' LIMIT 1", (file_hash,)).fetchone()
+        prior = db.execute("SELECT reference, title FROM cases WHERE file_hash=? AND file_hash<>'' LIMIT 1", (file_hash,)).fetchone()
         if prior:
-            findings.append({"severity":"medium","code":"DUPLICATE_FILE","title":"Identical file already submitted",
-                             "detail":f"The file hash matches an existing submission ({prior['reference']}).",
-                             "recommendation":"Check whether the duplicate is an intended resubmission."})
-    if not findings:
-        findings.append({"severity":"low","code":"RULES_PASSED","title":"No configured rule failures detected",
-                         "detail":"The configured text and date checks did not identify a priority issue. This does not prove authenticity.",
-                         "recommendation":"Continue with the standard human review process."})
+            add("medium", "DUPLICATE_FILE", "Identical file already submitted",
+                "The SHA-256 fingerprint exactly matches a file stored against an earlier case. This identifies identical bytes, not whether the reuse is improper.",
+                f"Matching case reference: {prior['reference']}; matching case title: {prior['title']}.",
+                "Check whether this is an expected resubmission, shared supporting evidence, or an accidental duplicate.", source="Stored case file fingerprint (SHA-256)")
+
+    # Cross-case reference consistency: compare explicit application/reference IDs where both exist.
+    ids = re.findall(r"(?:application|reference|certificate|registration)\s*(?:id|no\.?|number)\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\-/]{3,})", raw, flags=re.I)
+    for found_id in sorted(set(ids))[:5]:
+        other = db.execute("SELECT reference, title FROM cases WHERE extracted_text LIKE ? AND file_hash<>? LIMIT 1",
+                           (f"%{found_id}%", file_hash or "")).fetchone()
+        if other:
+            add("medium", "REFERENCE_REUSE", "Reference identifier also appears in another case",
+                "An extracted identifier was found in a different stored case. Identifiers can legitimately recur, so this is a cross-record consistency check rather than a forgery conclusion.",
+                f"Identifier: {found_id}; other case: {other['reference']} ({other['title']}).",
+                "Compare the document type, issuing body, date and source record; document whether the reuse is expected.", source="Cross-case stored text comparison")
+
+    # PDF metadata is a weak signal only. Do not label a file forged based on metadata.
+    if raw.strip() and not findings:
+        add("low", "RULES_PASSED", "No configured rule failures detected",
+            "The configured keyword, date and duplicate checks did not identify a priority issue. These checks are limited and do not authenticate the document.",
+            f"Text extracted: {len(raw)} characters; checklist category: {application_type}.",
+            "Continue the normal checklist, verify source records through authorized services where available, and retain human review.")
+
+    # Every case should explicitly state that a trusted issuer connection has not been made by this demo.
+    add("low", "ISSUER_VERIFICATION_PENDING", "Issuing-authority verification not connected",
+        "This prototype does not connect to live AICTE systems, issuer APIs, DigiLocker, QR verification services, or restricted institutional databases. Therefore it cannot mark this file as officially verified.",
+        "Source verification status: NOT CONNECTED / MANUAL CONFIRMATION REQUIRED.",
+        "An authorized officer should use the issuing authority's official portal or an approved integration. Record source, timestamp and result only after an authorized check.", source="Prototype capability boundary")
     return findings
 
 def extract_text(path, extension):
@@ -365,6 +416,18 @@ def extract_text(path, extension):
             import fitz
             doc = fitz.open(str(path))
             text = "\n".join(page.get_text("text") for page in doc)
+            if not text.strip():
+                try:
+                    import pytesseract
+                    from PIL import Image
+                    pages = []
+                    for page in doc:
+                        pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+                        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                        pages.append(pytesseract.image_to_string(img))
+                    text = "\n".join(pages)
+                except Exception:
+                    pass
             doc.close()
             return text[:100000]
         except Exception:
@@ -452,27 +515,30 @@ def new_case():
     user = current_user()
     if request.method == "POST":
         title = request.form.get("title", "").strip()[:120]
-        app_type = request.form.get("application_type", "General Application")
-        allowed_types = {"Institution Registration", "Faculty Credential", "Annual Compliance", "General Application"}
+        app_type = request.form.get("application_type", "")
+        allowed_types = set(APPLICATION_RULES)
         if not title or app_type not in allowed_types:
             flash("Enter a title and select a valid application type.", "danger")
-            return render_template("new_case.html")
+            return render_template("new_case.html", application_types=APPLICATION_RULES)
         upload = request.files.get("document")
         if not upload or not upload.filename:
             flash("Choose a document to upload.", "warning")
-            return render_template("new_case.html")
+            return render_template("new_case.html", application_types=APPLICATION_RULES)
         original_name = secure_filename(upload.filename)
         ext = original_name.rsplit(".", 1)[-1].lower() if "." in original_name else ""
         if ext not in ALLOWED_EXTENSIONS:
-            flash("Unsupported file type. Upload PDF, PNG, JPG, JPEG, or TXT.", "danger")
-            return render_template("new_case.html")
+            flash("Only AICTE supporting documents in PDF, PNG or JPG format are accepted. Archives, apps and code files are not allowed.", "danger")
+            return render_template("new_case.html", application_types=APPLICATION_RULES)
         content = upload.read()
         if not content:
             flash("The selected file is empty.", "danger")
-            return render_template("new_case.html")
+            return render_template("new_case.html", application_types=APPLICATION_RULES)
         if len(content) > app.config["MAX_CONTENT_LENGTH"]:
             flash("The file is too large. Maximum size is 12 MB.", "danger")
-            return render_template("new_case.html")
+            return render_template("new_case.html", application_types=APPLICATION_RULES)
+        if not matches_file_signature(ext, content):
+            flash("The file content does not match a valid PDF or document image. Upload a genuine PDF, PNG or JPG file.", "danger")
+            return render_template("new_case.html", application_types=APPLICATION_RULES)
         file_hash = hashlib.sha256(content).hexdigest()
         ref = "VAI-" + secrets.token_hex(3).upper()
         stored_name = ref + "_" + secrets.token_hex(8) + "." + ext
@@ -495,7 +561,7 @@ def new_case():
         log_event("DOCUMENT_UPLOADED", ref, f"Uploaded file SHA-256 {file_hash[:16]}…")
         flash(f"Application {ref} created and checked.", "success")
         return redirect(url_for("case_detail", case_id=cursor.lastrowid))
-    return render_template("new_case.html")
+    return render_template("new_case.html", application_types=APPLICATION_RULES)
 
 @app.route("/cases/<int:case_id>")
 @login_required
