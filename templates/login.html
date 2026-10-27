@@ -69,11 +69,12 @@
                 {% endif %}
             {% endwith %}
 
-            <form method="post"
+            <form method="POST"
                   action="{{ url_for('login') }}"
                   class="login-form"
                   autocomplete="on">
 
+                <!-- CSRF security token -->
                 <input type="hidden"
                        name="_csrf_token"
                        value="{{ csrf_token() }}">
@@ -107,10 +108,13 @@
                         required
                     >
 
-                    <button type="button"
-                            id="togglePassword"
-                            class="show-password"
-                            aria-label="Show password">
+                    <button
+                        type="button"
+                        id="togglePassword"
+                        class="show-password"
+                        aria-label="Show password"
+                        aria-pressed="false">
+
                         <i class="bi bi-eye"></i>
                     </button>
                 </div>
@@ -120,6 +124,7 @@
                         <i class="bi bi-shield-check"></i>
                         Secure sign-in
                     </span>
+
                     <span>Authorized access only</span>
                 </div>
 
@@ -143,35 +148,48 @@
                 </p>
 
                 <div class="role-pills">
-                    <button type="button"
-                            class="role-button"
-                            data-demo-user="demo.admin">
+
+                    <button
+                        type="button"
+                        class="role-button"
+                        data-demo-user="demo.admin"
+                        aria-pressed="false">
+
                         <i class="bi bi-shield-lock"></i>
                         Admin
                     </button>
 
-                    <button type="button"
-                            class="role-button"
-                            data-demo-user="demo.officer">
+                    <button
+                        type="button"
+                        class="role-button"
+                        data-demo-user="demo.officer"
+                        aria-pressed="false">
+
                         <i class="bi bi-person-check"></i>
                         Officer
                     </button>
 
-                    <button type="button"
-                            class="role-button"
-                            data-demo-user="demo.applicant">
+                    <button
+                        type="button"
+                        class="role-button"
+                        data-demo-user="demo.applicant"
+                        aria-pressed="false">
+
                         <i class="bi bi-building"></i>
                         Applicant
                     </button>
-                </div>
 
+                </div>
             </div>
 
             <div class="login-assurance">
                 <i class="bi bi-shield-check"></i>
+
                 <span>
                     <strong>Security-first design</strong>
-                    <small>Document review · Compliance · Audit trail</small>
+                    <small>
+                        Document review · Compliance · Audit trail
+                    </small>
                 </span>
             </div>
 
@@ -184,62 +202,4 @@
     </section>
 
 </div>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const usernameInput = document.getElementById("username");
-    const passwordInput = document.getElementById("password");
-    const roleButtons = document.querySelectorAll("[data-demo-user]");
-    const togglePassword = document.getElementById("togglePassword");
-
-    // Fill ONLY the username when a role is selected.
-    roleButtons.forEach(function (button) {
-        button.addEventListener("click", function () {
-            if (!usernameInput) return;
-
-            usernameInput.value = button.dataset.demoUser;
-            usernameInput.dispatchEvent(
-                new Event("input", { bubbles: true })
-            );
-            usernameInput.dispatchEvent(
-                new Event("change", { bubbles: true })
-            );
-
-            // Highlight the selected role.
-            roleButtons.forEach(function (item) {
-                item.classList.toggle("selected", item === button);
-                item.setAttribute(
-                    "aria-pressed",
-                    String(item === button)
-                );
-            });
-
-            usernameInput.focus();
-
-            // Password is deliberately left unchanged.
-        });
-    });
-
-    // Show or hide the password when requested.
-    if (togglePassword && passwordInput) {
-        togglePassword.addEventListener("click", function () {
-            const isHidden = passwordInput.type === "password";
-            passwordInput.type = isHidden ? "text" : "password";
-
-            const icon = togglePassword.querySelector("i");
-
-            if (icon) {
-                icon.className = isHidden
-                    ? "bi bi-eye-slash"
-                    : "bi bi-eye";
-            }
-
-            togglePassword.setAttribute(
-                "aria-label",
-                isHidden ? "Hide password" : "Show password"
-            );
-        });
-    }
-});
-</script>
 {% endblock %}
