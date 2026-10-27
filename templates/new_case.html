@@ -8,14 +8,17 @@
 <section class="page-heading">
     <p class="eyebrow">DOCUMENT INTAKE</p>
     <h1>Start a verification.</h1>
-    <p>Upload a fictional sample document and let the validation engine inspect it.</p>
+    <p>
+        Upload a fictional sample document and let the validation
+        engine inspect it.
+    </p>
     <a href="{{ url_for('dashboard') }}">← Back to overview</a>
 </section>
 
 <div class="notice">
     <strong>Use synthetic demo documents only</strong>
     <p>
-        Maximum 12 MB. Allowed: PDF, PNG, JPG, JPEG, TXT.
+        Maximum 12 MB. Allowed: PDF, PNG, JPG, JPEG.
         Files are stored privately and served through an authenticated route.
     </p>
 </div>
@@ -26,55 +29,83 @@
     <h3>Application profile</h3>
     <p>Provide the context used by the rule engine.</p>
 
-    <form method="POST"
-          action="{{ url_for('new_case') }}"
-          enctype="multipart/form-data">
-
+    <form
+        method="POST"
+        action="{{ url_for('new_case') }}"
+        enctype="multipart/form-data"
+    >
         <!-- Required CSRF security token -->
-        <input type="hidden"
-               name="_csrf_token"
-               value="{{ csrf_token() }}">
+        <input
+            type="hidden"
+            name="_csrf_token"
+            value="{{ csrf_token() }}"
+        >
 
+        <!-- Application title -->
         <label for="title">APPLICATION TITLE *</label>
         <input
             type="text"
             id="title"
             name="title"
+            maxlength="120"
             placeholder="e.g. Institution registration package"
             required
         >
-        <p class="helper-text">Use a fictional application title for the demo.</p>
+        <p class="helper-text">
+            Use a fictional application title for the demo.
+        </p>
 
-       <label for="application_type">APPLICATION CATEGORY *</label>
-        <select id="application_type" name="application_type" required>
-            <option value="Institution Registration">
-                Institution Registration
-            </option>
-            <option value="Extension of Approval">
+        <!-- Application category: values must match app.py -->
+        <label for="application_type">APPLICATION CATEGORY *</label>
+        <select
+            id="application_type"
+            name="application_type"
+            required
+        >
+            <option value="Extension of Approval (EoA)">
                 Extension of Approval (EoA)
             </option>
-            <option value="Change of Institution Details">
-                Change of Institution Details
+
+            <option value="New Institution Approval">
+                New Institution Approval
             </option>
-            <option value="New Programme Approval">
-                New Programme Approval
+
+            <option value="Change in Intake / Courses">
+                Change in Intake / Courses
             </option>
-            <option value="Other Approval Change">
-                Other Approval-Related Change
+
+            <option value="Institutional Details Change">
+                Institutional Details Change
+            </option>
+
+            <option value="Faculty Supporting Documents">
+                Faculty Supporting Documents
+            </option>
+
+            <option value="Affiliation / Approval Supporting Records">
+                Affiliation / Approval Supporting Records
+            </option>
+
+            <option value="Infrastructure Supporting Documents">
+                Infrastructure Supporting Documents
             </option>
         </select>
-        <p class="helper-text">Category selects the expected-field rules.</p>
 
+        <p class="helper-text">
+            Category selects the expected-field rules.
+        </p>
+
+        <!-- Supporting document -->
         <label for="document">DOCUMENT FILE *</label>
         <input
             type="file"
             id="document"
             name="document"
-            accept=".pdf,.png,.jpg,.jpeg,.txt"
+            accept=".pdf,.png,.jpg,.jpeg"
             required
         >
         <p class="helper-text">
-            PDF / PNG / JPG / TXT · UP TO 12 MB
+            PDF / PNG / JPG / JPEG · UP TO 12 MB
         </p>
 
         <div class="notice">
