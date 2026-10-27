@@ -1,25 +1,59 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VerifyAI | Compliance Intelligence</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
 {% if current_user %}
-VERIFYAICOMPLIANCE INTELLIGENCE
-WORKSPACE
- Overview ↗  New verification {% if current_user.role in ['admin','officer'] %}  Audit intelligence {% endif %}
-Protected workspace
-Role-based access is active. Demo data only.
+<header class="topbar">
+    <a class="brand" href="{{ url_for('dashboard') }}">VERIFYAI</a>
+    <span>COMPLIANCE INTELLIGENCE</span>
+</header>
 
-SESSION ENCRYPTION VIA HTTPS IN DEPLOYMENT
-{{ current_user.display_name[:1]|upper }}
-{{ current_user.display_name }}{{ current_user.role|upper }}
+<main class="workspace">
+    <h1>VERIFYAI WORKSPACE</h1>
+    <nav>
+        <a href="{{ url_for('dashboard') }}">Overview</a>
+        {% if current_user.role in ['admin', 'officer'] %}
+        <a href="{{ url_for('new_case') }}">New verification</a>
+        <a href="{{ url_for('audit') }}">Audit intelligence</a>
+        {% endif %}
+    </nav>
 
-VERIFYAI{% block crumb %}OVERVIEW{% endblock %}
-DEMO ENVIRONMENT
-{{ current_user.display_name[:1]|upper }}
-{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
-{% for category, message in messages %}
-{{ message }}×
-{% endfor %}
-{% endif %}{% endwith %} {% block content %}{% endblock %}
-VERIFYAI / SIH26261 CONCEPT PROTOTYPE Synthetic data only · Not an official AICTE service
-{% else %} {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
-{% for category, message in messages %}
-{{ message }}
-{% endfor %}
-{% endif %}{% endwith %} {% block auth_content %}{% endblock %} {% endif %}
+    <p>Protected workspace · Role-based access is active · Demo data only</p>
+    <p>{{ current_user.display_name }} · {{ current_user.role|upper }}</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<footer>VERIFYAI / SIH26261 CONCEPT PROTOTYPE · Synthetic data only · Not an official AICTE service</footer>
+
+{% else %}
+<main class="auth-page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% block auth_content %}{% endblock %}
+</main>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>
