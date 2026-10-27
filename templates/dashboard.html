@@ -1,59 +1,157 @@
-{% extends "base.html" %} {% block title %}Overview{% endblock %} {% block crumb %}OVERVIEW{% endblock %} {% block content %}
-MONITORING CENTER
-Good to see you, {{ current_user.display_name.split(' ')[-1] }}.
-Here’s the live picture of your verification workspace.
 
-New verification
-Demo environment activeAll seeded cases are fictional. Automated findings are review signals—not proof of fraud or authenticity.
-SAFE MODE
-VISIBLE APPLICATIONS
-{{ counts.total }}cases
-Current workspace01
-HIGH-RISK FLAGS
-{{ counts.flagged }}priority
-Review recommended02
-AWAITING ACTION
-{{ counts.pending }}open
-Workflow queue03
-APPROVED
-{{ counts.approved }}closed
-Human decision04
-CASE INTELLIGENCE
-Priority review queue
-Applications ordered by risk and latest activity.
+{% extends "base.html" %}
 
-{{ cases|length }} RECORDS
-{% for case in cases %} {% else %}{% endfor %}
-APPLICATION	RISK SIGNAL	STATUS	UPDATED	
-{{ case.reference }}{{ case.title }}	
-{{ case.risk_score }}/100
-{{ case.risk_level }} risk	{{ case.status }}	{{ case.updated_at[:10] }}	
-No applications yet. Create a verification to get started.
-PRIORITY SORT ENABLEDCreate new case
-PROCESS MAP
-Verification flow
-01
-Document intakeUpload & extract text
-02
-Rule validationFindings & risk score
-03
-Human reviewDecision & audit trail
-Start a verification
-VERIFYAI INSIGHT
-Explain every flag.
-Trust the process.
-Each automated finding includes the rule, evidence, and a suggested next action—so reviewers can make informed decisions.
+{% block title %}Overview | VerifyAI{% endblock %}
+{% block crumb %}OVERVIEW{% endblock %}
 
-EXPLAINABLE BY DESIGN
-{% if current_user.role in ['admin','officer'] %}
-SYSTEM TRACE
-Recent activity
-View all
-{% for event in recent_events %}
-{{ event.action|replace('_',' ')|title }}{{ event.actor_name }} · {{ event.created_at[11:16] }} UTC
-{% else %}
-Activity appears as you use the system.
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">MONITORING CENTER</p>
+    <h1>Good to see you, {{ current_user.display_name.split(' ')[-1] }}.</h1>
+    <p>Here’s the live picture of your verification workspace.</p>
 
-{% endfor %}
+    <a class="button button-primary" href="{{ url_for('new_case') }}">
+        + New verification
+    </a>
+</section>
+
+<div class="notice">
+    <strong>Demo environment active</strong>
+    <p>All seeded cases are fictional. Automated findings are review signals—not proof of fraud or authenticity.</p>
+</div>
+
+<section class="stats-grid">
+    <article class="stat-card">
+        <p class="eyebrow">VISIBLE APPLICATIONS</p>
+        <h2>{{ counts.total }}</h2>
+        <p>Current workspace · 01</p>
+    </article>
+
+    <article class="stat-card">
+        <p class="eyebrow">HIGH-RISK FLAGS</p>
+        <h2>{{ counts.flagged }}</h2>
+        <p>Review recommended · 02</p>
+    </article>
+
+    <article class="stat-card">
+        <p class="eyebrow">AWAITING ACTION</p>
+        <h2>{{ counts.pending }}</h2>
+        <p>Workflow queue · 03</p>
+    </article>
+
+    <article class="stat-card">
+        <p class="eyebrow">APPROVED</p>
+        <h2>{{ counts.approved }}</h2>
+        <p>Human decision · 04</p>
+    </article>
+</section>
+
+<section class="panel">
+    <p class="eyebrow">CASE INTELLIGENCE</p>
+    <h2>Priority review queue</h2>
+    <p>Applications ordered by risk and latest activity.</p>
+
+    <p><strong>{{ cases|length }} RECORDS</strong></p>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>APPLICATION</th>
+                    <th>RISK SIGNAL</th>
+                    <th>STATUS</th>
+                    <th>UPDATED</th>
+                    <th>ACTION</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in cases %}
+                <tr>
+                    <td>
+                        <strong>{{ case.reference }}</strong>
+                        <p>{{ case.title }}</p>
+                    </td>
+                    <td>
+                        {{ case.risk_score }}/100
+                        <p>{{ case.risk_level }} risk</p>
+                    </td>
+                    <td>{{ case.status }}</td>
+                    <td>{{ case.updated_at[:10] }}</td>
+                    <td>
+                        <a href="{{ url_for('case_detail', case_id=case.id) }}">
+                            Review case
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">
+                        No applications yet. Create a verification to get started.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <p class="eyebrow">PRIORITY SORT ENABLED</p>
+    <a class="button button-primary" href="{{ url_for('new_case') }}">
+        Create new case
+    </a>
+</section>
+
+<section class="panel">
+    <p class="eyebrow">PROCESS MAP</p>
+    <h2>Verification flow</h2>
+
+    <div class="workflow-grid">
+        <article>
+            <p class="eyebrow">01</p>
+            <h3>Document intake</h3>
+            <p>Upload and extract text.</p>
+        </article>
+
+        <article>
+            <p class="eyebrow">02</p>
+            <h3>Rule validation</h3>
+            <p>Findings and risk score.</p>
+        </article>
+
+        <article>
+            <p class="eyebrow">03</p>
+            <h3>Human review</h3>
+            <p>Decision and audit trail.</p>
+        </article>
+    </div>
+
+    <a href="{{ url_for('new_case') }}">Start a verification</a>
+</section>
+
+<section class="panel">
+    <p class="eyebrow">VERIFYAI INSIGHT</p>
+    <h2>Explain every flag. Trust the process.</h2>
+    <p>
+        Each automated finding should include the rule, evidence and a suggested
+        next action, so reviewers can make informed decisions.
+    </p>
+    <p class="eyebrow">EXPLAINABLE BY DESIGN</p>
+</section>
+
+{% if current_user.role in ['admin', 'officer'] %}
+<section class="panel">
+    <p class="eyebrow">SYSTEM TRACE</p>
+    <h2>Recent activity</h2>
+    <a href="{{ url_for('audit') }}">View all audit events</a>
+
+    {% for event in recent_events %}
+    <div class="activity-item">
+        <strong>{{ event.action|replace('_', ' ')|title }}</strong>
+        <p>{{ event.actor_name }} · {{ event.created_at[11:16] }} UTC</p>
+    </div>
+    {% else %}
+    <p>Activity appears as you use the system.</p>
+    {% endfor %}
+</section>
 {% endif %}
+
 {% endblock %}
