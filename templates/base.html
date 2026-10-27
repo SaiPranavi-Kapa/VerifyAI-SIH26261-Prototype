@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#090d19">
+
     <title>{% block title %}VerifyAI | Compliance Intelligence{% endblock %}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,15 +14,19 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
 
 {% if current_user %}
+
 <div class="ambient ambient-one"></div>
 <div class="ambient ambient-two"></div>
 
 <div class="app-shell">
 
+    <!-- LEFT SIDEBAR -->
     <aside class="sidebar">
+
         <a class="brand" href="{{ url_for('dashboard') }}">
             <span class="brand-mark">✦</span>
             <span>
@@ -36,23 +41,25 @@
         </div>
 
         <nav class="side-nav">
+
             <a href="{{ url_for('dashboard') }}" class="active">
-                <i>⌂</i>
+                <i aria-hidden="true">⌂</i>
                 <span>Overview</span>
                 <span class="nav-arrow">›</span>
             </a>
 
             {% if current_user.role in ['admin', 'officer'] %}
             <a href="{{ url_for('new_case') }}">
-                <i>＋</i>
+                <i aria-hidden="true">＋</i>
                 <span>New verification</span>
             </a>
 
             <a href="{{ url_for('audit') }}">
-                <i>▤</i>
+                <i aria-hidden="true">▤</i>
                 <span>Audit intelligence</span>
             </a>
             {% endif %}
+
         </nav>
 
         <div class="sidebar-spacer"></div>
@@ -60,9 +67,12 @@
         <div class="security-card">
             <div class="security-icon">♧</div>
             <b>Secure review environment</b>
-            <p>Demo workspace with role-based access and synthetic records.</p>
+            <p>
+                Demo workspace with role-based access and synthetic records.
+            </p>
             <div class="security-status">
-                <span></span> PROTECTED SESSION
+                <span></span>
+                PROTECTED SESSION
             </div>
         </div>
 
@@ -70,74 +80,127 @@
             <div class="avatar">
                 {{ current_user.display_name[:1]|upper }}
             </div>
+
             <div class="user-meta">
                 <b>{{ current_user.display_name }}</b>
                 <small>{{ current_user.role|upper }}</small>
             </div>
+
+            <!-- SIGN OUT BUTTON -->
+            <form method="POST"
+                  action="{{ url_for('logout') }}"
+                  class="logout-form"
+                  title="Sign out">
+
+                <input type="hidden"
+                       name="_csrf_token"
+                       value="{{ csrf_token() }}">
+
+                <button type="submit"
+                        class="logout-button"
+                        aria-label="Sign out"
+                        title="Sign out and return to login">
+                    ↪
+                </button>
+            </form>
         </div>
+
     </aside>
 
+    <!-- MAIN WORKSPACE -->
     <div class="main-area">
+
         <header class="topbar">
+
             <div class="breadcrumb">
-                VERIFYAI <i>›</i> <span>COMPLIANCE WORKSPACE</span>
+                VERIFYAI <i>›</i>
+                <span>COMPLIANCE WORKSPACE</span>
             </div>
+
             <div class="top-actions">
+
                 <div class="demo-chip">
                     <span class="live-dot"></span>
                     DEMO ENVIRONMENT
                 </div>
-                <div class="top-avatar">
-                    {{ current_user.display_name[:1]|upper }}
-                </div>
+
+                <!-- TOP-RIGHT ACCOUNT / LOGOUT ICON -->
+                <form method="POST"
+                      action="{{ url_for('logout') }}"
+                      class="logout-form"
+                      title="Sign out">
+
+                    <input type="hidden"
+                           name="_csrf_token"
+                           value="{{ csrf_token() }}">
+
+                    <button type="submit"
+                            class="top-avatar logout-button"
+                            aria-label="Sign out"
+                            title="Click to return to login">
+                        {{ current_user.display_name[:1]|upper }}
+                    </button>
+                </form>
+
             </div>
         </header>
 
         <main class="page-content">
 
+            <!-- SUCCESS AND ERROR MESSAGES -->
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                <div class="flash-stack">
-                    {% for category, message in messages %}
-                    <div class="flash flash-{{ category }}">
-                        <span>{{ message }}</span>
+                    <div class="flash-stack">
+                        {% for category, message in messages %}
+                            <div class="flash flash-{{ category }}">
+                                <span>{{ message }}</span>
+                            </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
-                </div>
                 {% endif %}
             {% endwith %}
 
+            <!-- CHILD PAGE CONTENT -->
             {% block content %}{% endblock %}
 
             <footer class="footer">
-                <span>VERIFYAI <span class="footer-sep">/</span> SIH 2026</span>
-                <span>Synthetic demo data only · Not an official AICTE service</span>
+                <span>
+                    VERIFYAI <span class="footer-sep">/</span> SIH 2026
+                </span>
+                <span>
+                    Synthetic demo data only · Not an official AICTE service
+                </span>
             </footer>
 
         </main>
     </div>
+
 </div>
 
 {% else %}
 
+<!-- LOGIN PAGE -->
 <main class="auth-page">
+
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-        <div class="login-flashes">
-            {% for category, message in messages %}
-            <div class="flash flash-{{ category }}">
-                <span>{{ message }}</span>
+            <div class="login-flashes">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">
+                        <span>{{ message }}</span>
+                    </div>
+                {% endfor %}
             </div>
-            {% endfor %}
-        </div>
         {% endif %}
     {% endwith %}
 
     {% block auth_content %}{% endblock %}
+
 </main>
 
 {% endif %}
 
 <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+
 </body>
 </html>
