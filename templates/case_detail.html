@@ -1,0 +1,84 @@
+{% extends "base.html" %} {% block title %}{{ case.reference }}{% endblock %} {% block crumb %}CASE INTELLIGENCE / {{ case.reference }}{% endblock %} {% block content %}
+CASE INTELLIGENCE
+{{ case.reference }} / {{ case.title }}
+{{ case.application_type }} · Submitted {{ case.created_at[:10] }} · Applicant {{ case.applicant_name }}
+
+Overview Export report
+VALIDATION SUMMARY{{ case.status }}
+Risk assessment / rule-based
+Signals help prioritize review. They do not establish fraud or document authenticity.
+
+{{ case.risk_score }}/100
+{{ case.risk_level }} risk
+{{ case.risk_score }}RISK INDEX
+VAI / {{ case.reference }}
+EXPLAINABLE VALIDATION
+Findings & recommended actions
+{{ findings|length }} configured rule result(s) for this submission.
+
+RULE ENGINE
+{% for finding in findings %}
+{{ finding.title }}
+{{ finding.severity }}
+{{ finding.detail }}
+
+Recommended action{{ finding.recommendation }}
+RULE / {{ finding.code }}
+{% endfor %}
+INTERACTIVE DEMONSTRATION
+What-if simulator
+Test how resolving a finding changes the priority score. This does not alter the saved case.
+
+{% for finding in findings %}{{ finding.title }}{{ finding.severity|upper }} · {{ finding.code }}{% endfor %}
+Simulate resolved findings
+{% if simulation %}
+SIMULATED RESULT — NOT SAVED
+{{ simulation.score }}/100 {{ simulation.level }} risk
+{{ simulation.resolved|length }} finding code(s) marked resolved for this scenario. Verify the underlying document before making a real decision.
+
+PREVIOUS{{ case.risk_score }}{{ simulation.score }}
+{% endif %}
+EVIDENCE-GROUNDED HELPER
+Ask VerifyAI
+Choose a question answered from this case’s actual findings.
+
+Why was this application flagged?What should be checked next?How should I interpret the risk score?
+Select a question to see a case-grounded explanation.
+RECORD DETAILS
+Submission profile
+Reference
+{{ case.reference }}
+Applicant
+{{ case.applicant_name }}
+Category
+{{ case.application_type }}
+Original file
+{{ case.file_name or 'Seeded sample record' }}
+SHA-256 fingerprint
+{{ (case.file_hash[:24] + '…') if case.file_hash else 'Sample record' }}
+Last updated
+{{ case.updated_at[:16].replace('T',' ') }}
+{% if case.stored_name %} Download original file{% endif %}
+{% if current_user.role in ['admin','officer'] %}
+HUMAN IN THE LOOP
+Officer decision
+CASE STATUS
+{{ status }}
+REVIEW NOTE
+{{ case.review_note }}
+Save decision
+{% else %}
+REVIEW STATUS
+{{ case.status }}
+Only assigned staff can record a decision. Contact the review team if a correction is needed.
+
+{% if case.review_note %}
+Officer note
+{{ case.review_note }}
+
+{% endif %}
+{% endif %}
+Human decision required
+Risk scores prioritize attention. They must not be used as the sole basis for approval or rejection.
+
+{% endblock %}
