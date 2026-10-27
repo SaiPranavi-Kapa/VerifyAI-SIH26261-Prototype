@@ -1,1 +1,25 @@
+{% if current_user %}
+VERIFYAICOMPLIANCE INTELLIGENCE
+WORKSPACE
+ Overview ↗  New verification {% if current_user.role in ['admin','officer'] %}  Audit intelligence {% endif %}
+Protected workspace
+Role-based access is active. Demo data only.
 
+SESSION ENCRYPTION VIA HTTPS IN DEPLOYMENT
+{{ current_user.display_name[:1]|upper }}
+{{ current_user.display_name }}{{ current_user.role|upper }}
+
+VERIFYAI{% block crumb %}OVERVIEW{% endblock %}
+DEMO ENVIRONMENT
+{{ current_user.display_name[:1]|upper }}
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+{% for category, message in messages %}
+{{ message }}×
+{% endfor %}
+{% endif %}{% endwith %} {% block content %}{% endblock %}
+VERIFYAI / SIH26261 CONCEPT PROTOTYPE Synthetic data only · Not an official AICTE service
+{% else %} {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}
+{% for category, message in messages %}
+{{ message }}
+{% endfor %}
+{% endif %}{% endwith %} {% block auth_content %}{% endblock %} {% endif %}
