@@ -1,103 +1,856 @@
 
 {% extends "base.html" %}
 
-{% block title %}Verification Case | VerifyAI{% endblock %}
-{% block crumb %}CASE DETAILS{% endblock %}
+{% block title %}Case Review | VerifyAI{% endblock %}
 
 {% block content %}
-<section class="page-heading">
-    <p class="eyebrow">AICTE APPLICATION VERIFICATION</p>
-    <h1>Verification case</h1>
-    <p>Review the submitted application, supporting documents and compliance checks.</p>
-</section>
-
-<section class="panel">
-    <h2>Application overview</h2>
-
-    <div class="detail-grid">
-        <div>
-            <p class="eyebrow">CASE REFERENCE</p>
-            <p>{{ case.case_ref|default(case.id|default('N/A')) }}</p>
-        </div>
-
-        <div>
-            <p class="eyebrow">INSTITUTION</p>
-            <p>{{ case.institution_name|default('Not provided') }}</p>
-        </div>
-
-        <div>
-            <p class="eyebrow">APPLICATION TYPE</p>
-            <p>{{ case.application_type|default('Extension of Approval') }}</p>
-        </div>
-
-        <div>
-            <p class="eyebrow">STATUS</p>
-            <p>{{ case.status|default('Under review') }}</p>
-        </div>
-    </div>
-</section>
-
-<section class="panel">
-    <h2>Document validation</h2>
-    <p>Review the available document-processing results for this case.</p>
-
-    {% if case.documents is defined and case.documents %}
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>DOCUMENT</th>
-                    <th>TYPE</th>
-                    <th>VALIDATION STATUS</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for document in case.documents %}
-                <tr>
-                    <td>{{ document.filename|default(document.name|default('Document')) }}</td>
-                    <td>{{ document.document_type|default('Supporting document') }}</td>
-                    <td>{{ document.status|default('Pending review') }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+{% set ns = namespace(high=0, medium=0, low=0) %}
+{% for finding in findings %}
+    {% if finding.severity == 'high' %}
+        {% set ns.high = ns.high + 1 %}
+    {% elif finding.severity == 'medium' %}
+        {% set ns.medium = ns.medium + 1 %}
     {% else %}
-    <p>No document details are available in this view.</p>
+        {% set ns.low = ns.low + 1 %}
     {% endif %}
-</section>
+{% endfor %}
 
-<section class="panel">
-    <h2>Compliance review</h2>
-    <p>Review extracted fields, document validity and applicable regulatory requirements.</p>
+<style>
+.case-detail {
+    color: var(--text-primary, #e9edf7);
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+.case-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+.case-kicker {
+    color: #9aa9c5;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.case-header h1 {
+    margin: 0 0 8px;
+    font-size: clamp(24px, 3vw, 34px);
+}
+.case-subtitle {
+    color: #aab6cc;
+    font-size: 14px;
+}
+.case-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.va-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: 1px solid #35435d;
+    background: #172239;
+    color: #eef3ff;
+    text-decoration: none;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+}
+.va-btn.primary {
+    background: #7767f5;
+    border-color: #7767f5;
+    color: white;
+}
+.va-btn:hover {
+    filter: brightness(1.12);
+}
+.va-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+}
+.va-card {
+    background: var(--card-bg, #111c30);
+    border: 1px solid var(--border-color, #293650);
+    border-radius: 16px;
+    padding: 19px;
+    min-width: 0;
+}
+.va-card-label {
+    color: #9eacc4;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+.va-card-value {
+    font-size: 23px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+.va-card-note {
+    color: #9eacc4;
+    font-size: 12px;
+    margin-top: 8px;
+}
+.va-section {
+    margin-top: 22px;
+}
+.va-section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 13px;
+}
+.va-section-heading h2 {
+    margin: 0;
+    font-size: 19px;
+}
+.va-panel {
+    background: var(--card-bg, #111c30);
+    border: 1px solid var(--border-color, #293650);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 15px;
+    min-width: 0;
+}
+.va-muted {
+    color: #aab6cc;
+    font-size: 13px;
+    line-height: 1.7;
+}
+.va-pill {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #24334c;
+    color: #dce6fa;
+}
+.va-pill.high {
+    background: #4b202b;
+    color: #ffb9c2;
+}
+.va-pill.medium {
+    background: #49391b;
+    color: #ffda91;
+}
+.va-pill.low {
+    background: #183c34;
+    color: #9ce8d1;
+}
+.va-finding {
+    border: 1px solid #2a3852;
+    border-left: 4px solid #64748b;
+    border-radius: 13px;
+    padding: 18px;
+    margin-bottom: 13px;
+    background: rgba(20, 31, 51, .65);
+}
+.va-finding.high {
+    border-left-color: #ff657a;
+}
+.va-finding.medium {
+    border-left-color: #f4bd50;
+}
+.va-finding.low {
+    border-left-color: #4bc7a4;
+}
+.va-finding-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.va-finding h3 {
+    margin: 8px 0;
+    font-size: 16px;
+}
+.va-code {
+    color: #aab6cc;
+    font-size: 11px;
+    font-family: monospace;
+}
+.va-detail {
+    color: #d1daea;
+    font-size: 13px;
+    line-height: 1.7;
+    margin: 10px 0;
+}
+.va-info {
+    border: 1px solid #2b3b57;
+    background: rgba(30, 44, 68, .5);
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+.va-info strong {
+    display: block;
+    color: #b9c9e6;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    margin-bottom: 5px;
+}
+.va-recommendation {
+    border-color: #36504e;
+    background: rgba(24, 66, 57, .22);
+}
+.va-assistant {
+    border: 1px solid #544bb1;
+    background: linear-gradient(140deg, #171b36, #111c30 65%);
+    border-radius: 17px;
+    padding: 22px;
+}
+.va-assistant-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.va-assistant-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    background: #5c50cc;
+    font-size: 20px;
+}
+.va-assistant h2 {
+    margin: 0 0 4px;
+    font-size: 19px;
+}
+.va-assistant-response {
+    background: #0c1528;
+    border: 1px solid #2a3852;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    font-size: 13px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.va-questions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 15px 0;
+}
+.va-question {
+    border: 1px solid #3b426e;
+    background: #202444;
+    color: #e7e6ff;
+    border-radius: 999px;
+    padding: 9px 12px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.va-assistant-form {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+.va-assistant-form input {
+    flex: 1;
+    min-width: 0;
+    background: #0c1528;
+    color: #fff;
+    border: 1px solid #35435d;
+    border-radius: 10px;
+    padding: 12px;
+    font: inherit;
+}
+.va-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+}
+.va-meta-item {
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(25, 38, 60, .6);
+    overflow-wrap: anywhere;
+}
+.va-meta-item strong {
+    display: block;
+    color: #9eacc4;
+    font-size: 11px;
+    margin-bottom: 5px;
+}
+.va-meta-item span {
+    font-size: 13px;
+}
+.va-warning {
+    border: 1px solid #735b2a;
+    background: rgba(102, 76, 24, .18);
+    border-radius: 12px;
+    padding: 14px;
+    color: #f5dba3;
+    font-size: 12px;
+    line-height: 1.7;
+}
+.va-text-preview {
+    color: #b9c6dc;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 280px;
+    overflow: auto;
+}
+.va-empty {
+    text-align: center;
+    padding: 26px 12px;
+    color: #aab6cc;
+}
+@media (max-width: 850px) {
+    .va-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 540px) {
+    .va-grid,
+    .va-meta {
+        grid-template-columns: 1fr;
+    }
+    .va-assistant-form {
+        flex-direction: column;
+    }
+}
+</style>
 
-    {% if case.validation_results is defined and case.validation_results %}
-    <ul>
-        {% for result in case.validation_results %}
-        <li>
-            <strong>{{ result.name|default(result.rule|default('Validation check')) }}</strong>
-            — {{ result.status|default('Pending review') }}
-            {% if result.message is defined %}
-            <p>{{ result.message }}</p>
+<div class="case-detail"
+     id="verifyai-case"
+     data-reference="{{ case.reference|e }}"
+     data-application-type="{{ case.application_type|e }}"
+     data-risk-level="{{ case.risk_level|e }}"
+     data-risk-score="{{ case.risk_score }}"
+     data-status="{{ case.status|e }}"
+     data-findings='{{ findings|tojson|forceescape }}'>
+
+    <header class="case-header">
+        <div>
+            <div class="case-kicker">VerifyAI / Application Review</div>
+            <h1>{{ case.title }}</h1>
+            <div class="case-subtitle">
+                Reference: <strong>{{ case.reference }}</strong>
+                &nbsp; · &nbsp;
+                {{ case.application_type }}
+            </div>
+        </div>
+
+        <div class="case-actions">
+            <a class="va-btn"
+               href="{{ url_for('protected_file', case_id=case.id) }}">
+                Download document
+            </a>
+            <a class="va-btn primary"
+               href="{{ url_for('report_case', case_id=case.id) }}">
+                Download report
+            </a>
+        </div>
+    </header>
+
+    <section class="va-grid">
+        <div class="va-card">
+            <div class="va-card-label">Application status</div>
+            <div class="va-card-value" style="font-size:18px">
+                {{ case.status }}
+            </div>
+            <div class="va-card-note">Workflow status</div>
+        </div>
+
+        <div class="va-card">
+            <div class="va-card-label">Preliminary risk score</div>
+            <div class="va-card-value">{{ case.risk_score }}/100</div>
+            <div class="va-card-note">
+                <span class="va-pill {{ case.risk_level|lower }}">
+                    {{ case.risk_level }} risk
+                </span>
+            </div>
+        </div>
+
+        <div class="va-card">
+            <div class="va-card-label">High-priority flags</div>
+            <div class="va-card-value">{{ ns.high }}</div>
+            <div class="va-card-note">Require attention</div>
+        </div>
+
+        <div class="va-card">
+            <div class="va-card-label">Other findings</div>
+            <div class="va-card-value">{{ ns.medium + ns.low }}</div>
+            <div class="va-card-note">Review and confirm</div>
+        </div>
+    </section>
+
+    <section class="va-section">
+        <div class="va-section-heading">
+            <h2>Application information</h2>
+            <span class="va-pill">Case details</span>
+        </div>
+
+        <div class="va-panel">
+            <div class="va-meta">
+                <div class="va-meta-item">
+                    <strong>Applicant</strong>
+                    <span>{{ case.applicant_name }}</span>
+                </div>
+
+                <div class="va-meta-item">
+                    <strong>Uploaded file</strong>
+                    <span>
+                        {{ case.file_name if case.file_name else 'No filename recorded' }}
+                    </span>
+                </div>
+
+                <div class="va-meta-item">
+                    <strong>Submitted at</strong>
+                    <span>{{ case.created_at }}</span>
+                </div>
+
+                <div class="va-meta-item">
+                    <strong>Last updated</strong>
+                    <span>{{ case.updated_at }}</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="va-section">
+        <div class="va-section-heading">
+            <h2>Validation findings</h2>
+            <span class="va-muted">
+                {{ findings|length }} finding(s)
+            </span>
+        </div>
+
+        <div class="va-warning">
+            <strong>Decision-support notice:</strong>
+            These are preliminary rule-based findings. A flag is
+            not proof of forgery, misconduct, or non-compliance.
+            Confirm the evidence and apply the relevant authorized
+            regulatory checklist before making a decision.
+        </div>
+
+        <div style="margin-top:15px">
+            {% for finding in findings %}
+                <article class="va-finding {{ finding.severity|lower }}">
+                    <div class="va-finding-top">
+                        <div>
+                            <span class="va-pill {{ finding.severity|lower }}">
+                                {{ finding.severity|upper }} PRIORITY
+                            </span>
+                            <h3>{{ finding.title }}</h3>
+                            <div class="va-code">
+                                Rule: {{ finding.code }}
+                            </div>
+                        </div>
+
+                        <span class="va-pill">
+                            {{ finding.status|default('Needs human confirmation') }}
+                        </span>
+                    </div>
+
+                    <div class="va-detail">
+                        <strong>Why was this flagged?</strong><br>
+                        {{ finding.detail }}
+                    </div>
+
+                    <div class="va-info">
+                        <strong>Supporting evidence</strong>
+                        {{ finding.evidence }}
+                    </div>
+
+                    <div class="va-info va-recommendation">
+                        <strong>Recommended next step</strong>
+                        {{ finding.recommendation }}
+                    </div>
+
+                    <div class="va-info">
+                        <strong>Source of this check</strong>
+                        {{ finding.source|default('Prototype rule-based check') }}
+                    </div>
+                </article>
+            {% else %}
+                <div class="va-panel va-empty">
+                    <h3>No findings available</h3>
+                    <p>
+                        No validation findings were stored for this
+                        case. This does not establish authenticity
+                        or regulatory compliance.
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="va-section">
+        <div class="va-section-heading">
+            <h2>Ask VerifyAI</h2>
+            <span class="va-pill">Evidence-aware assistance</span>
+        </div>
+
+        <div class="va-assistant">
+            <div class="va-assistant-title">
+                <div class="va-assistant-icon">✦</div>
+                <div>
+                    <h2>VerifyAI Assistant</h2>
+                    <div class="va-muted">
+                        Ask about the findings recorded for this case.
+                    </div>
+                </div>
+            </div>
+
+            <p class="va-muted">
+                This assistant uses the case findings shown above.
+                It does not independently contact AICTE or an
+                issuing authority and cannot certify authenticity.
+            </p>
+
+            <div class="va-questions">
+                <button class="va-question" type="button"
+                        data-question="Why was this application flagged?">
+                    Why was this flagged?
+                </button>
+
+                <button class="va-question" type="button"
+                        data-question="Explain the evidence for each finding.">
+                    Explain the evidence
+                </button>
+
+                <button class="va-question" type="button"
+                        data-question="What should I do to resolve the findings?">
+                    How do I resolve this?
+                </button>
+
+                <button class="va-question" type="button"
+                        data-question="Has this document been officially verified?">
+                    Is this officially verified?
+                </button>
+            </div>
+
+            <form class="va-assistant-form" id="verifyai-assistant-form">
+                <input type="text"
+                       id="verifyai-question"
+                       name="question"
+                       maxlength="500"
+                       placeholder="Ask why a finding occurred..."
+                       autocomplete="off"
+                       required>
+
+                <button class="va-btn primary" type="submit">
+                    Ask VerifyAI
+                </button>
+            </form>
+
+            <div class="va-assistant-response"
+                 id="verifyai-answer"
+                 role="status"
+                 aria-live="polite">Hello! I can explain the recorded findings, their evidence, and suggested next steps. Ask me a question to begin.</div>
+        </div>
+    </section>
+
+    <section class="va-section">
+        <div class="va-section-heading">
+            <h2>Extracted document text</h2>
+            <span class="va-pill">OCR / text extraction</span>
+        </div>
+
+        <div class="va-panel">
+            {% if case.extracted_text %}
+                <div class="va-text-preview">{{ case.extracted_text }}</div>
+            {% else %}
+                <p class="va-muted">
+                    No readable text was extracted. The file may be
+                    scanned, image-only, password-protected, or
+                    unsupported by the current extraction setup.
+                    OCR may need to be configured.
+                </p>
             {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>Compliance results are not available in this view. Review the case records before making a decision.</p>
+        </div>
+    </section>
+
+    {% if current_user and current_user.role in ['admin', 'officer'] %}
+    <section class="va-section">
+        <div class="va-section-heading">
+            <h2>Authorized officer review</h2>
+            <span class="va-pill">Human decision required</span>
+        </div>
+
+        <div class="va-panel">
+            <p class="va-muted">
+                Review the original evidence and relevant regulatory
+                requirements before changing the workflow status.
+                Do not reject an application solely because an
+                automated rule generated a flag.
+            </p>
+
+            <form method="POST"
+                  action="{{ url_for('review_case', case_id=case.id) }}">
+
+                <input type="hidden"
+                       name="_csrf_token"
+                       value="{{ csrf_token() }}">
+
+                <label for="review-status">Workflow status</label>
+                <select id="review-status"
+                        name="status"
+                        required
+                        style="display:block;width:100%;margin:8px 0 16px;padding:11px;border-radius:9px;">
+                    {% for status_option in [
+                        'Submitted',
+                        'Under Review',
+                        'Needs Correction',
+                        'Approved',
+                        'Rejected'
+                    ] %}
+                        <option value="{{ status_option }}"
+                            {% if case.status == status_option %}selected{% endif %}>
+                            {{ status_option }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label for="review-note">Review note / evidence reference</label>
+                <textarea id="review-note"
+                          name="review_note"
+                          rows="4"
+                          maxlength="1000"
+                          placeholder="Record the evidence reviewed, source consulted, and action taken."
+                          style="display:block;width:100%;box-sizing:border-box;margin:8px 0 16px;padding:12px;border-radius:9px;">{{ case.review_note }}</textarea>
+
+                <button class="va-btn primary" type="submit">
+                    Save review
+                </button>
+            </form>
+        </div>
+    </section>
     {% endif %}
-</section>
 
-<section class="panel">
-    <h2>Review notice</h2>
-    <p>
-        This is a decision-support prototype using demo data.
-        Automated checks do not constitute official AICTE approval.
-        An authorized reviewer must verify the evidence before making a decision.
-    </p>
-</section>
+    {% if simulation is defined and simulation %}
+    <section class="va-section">
+        <div class="va-section-heading">
+            <h2>What-if simulation</h2>
+            <span class="va-pill">Not an official decision</span>
+        </div>
 
-<a class="button button-primary" href="{{ url_for('dashboard') }}">
-    Return to dashboard
-</a>
+        <div class="va-panel">
+            <p>
+                Simulated score:
+                <strong>{{ simulation.score }}/100</strong>
+            </p>
+
+            <p>
+                Simulated risk:
+                <strong>{{ simulation.level }}</strong>
+            </p>
+
+            <p class="va-muted">
+                This simulation temporarily excludes selected findings.
+                It does not change the stored case or establish compliance.
+            </p>
+        </div>
+    </section>
+    {% endif %}
+
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    const root = document.getElementById("verifyai-case");
+    const form = document.getElementById("verifyai-assistant-form");
+    const questionInput = document.getElementById("verifyai-question");
+    const answerBox = document.getElementById("verifyai-answer");
+
+    if (!root || !form || !questionInput || !answerBox) {
+        return;
+    }
+
+    let findings = [];
+
+    try {
+        findings = JSON.parse(root.dataset.findings || "[]");
+        if (!Array.isArray(findings)) findings = [];
+    } catch (_error) {
+        findings = [];
+    }
+
+    const caseReference = root.dataset.reference || "Unknown";
+    const appType = root.dataset.applicationType || "Unspecified";
+    const riskLevel = root.dataset.riskLevel || "Unknown";
+    const riskScore = root.dataset.riskScore || "Unknown";
+
+    function answerQuestion(question) {
+        const q = question.toLowerCase().trim();
+
+        if (
+            q.includes("officially verified") ||
+            q.includes("official verification") ||
+            q.includes("authentic") ||
+            q.includes("issuer") ||
+            q.includes("aicte")
+        ) {
+            return [
+                "OFFICIAL VERIFICATION STATUS",
+                "",
+                "This prototype does not have a live authorized connection to AICTE or the issuing authority for this case.",
+                "The current checks are preliminary software checks, not official authentication.",
+                "",
+                "Recommended next steps:",
+                "1. Open the original document.",
+                "2. Use the issuing authority's official portal or an authorized verification service.",
+                "3. Record the source, date/time, reference checked, and result.",
+                "4. If the source is unavailable, route the case for manual confirmation."
+            ].join("\n");
+        }
+
+        if (
+            q.includes("resolve") ||
+            q.includes("next step") ||
+            q.includes("what should") ||
+            q.includes("fix") ||
+            q.includes("correct")
+        ) {
+            if (!findings.length) {
+                return "No findings are stored for this case. Review the original document and the applicable regulatory checklist. A clean result from this prototype does not prove compliance.";
+            }
+
+            return [
+                "SUGGESTED ACTION PLAN",
+                "",
+                ...findings.map((f, i) =>
+                    `${i + 1}. ${f.title}\n` +
+                    `Reason: ${f.detail}\n` +
+                    `Action: ${f.recommendation}`
+                ),
+                "",
+                "Treat each item as a prompt for review, not an automatic adverse decision."
+            ].join("\n\n");
+        }
+
+        if (
+            q.includes("evidence") ||
+            q.includes("proof") ||
+            q.includes("support")
+        ) {
+            if (!findings.length) {
+                return "No findings or supporting evidence are stored for this case. Inspect the original file and confirm its contents.";
+            }
+
+            return [
+                "RECORDED EVIDENCE",
+                "",
+                ...findings.map((f, i) =>
+                    `${i + 1}. ${f.title}\n` +
+                    `Rule: ${f.code}\n` +
+                    `Evidence: ${f.evidence}\n` +
+                    `Check source: ${f.source || "Prototype rule"}`
+                ),
+                "",
+                "The evidence shown here comes from the prototype's stored findings. It is not independent confirmation from an issuing authority."
+            ].join("\n\n");
+        }
+
+        if (
+            q.includes("risk") ||
+            q.includes("score") ||
+            q.includes("high priority")
+        ) {
+            return [
+                `Case: ${caseReference}`,
+                `Preliminary risk score: ${riskScore}/100`,
+                `Risk band: ${riskLevel}`,
+                "",
+                "The score summarizes configured prototype rules. It is not a probability of fraud, a legal conclusion, or a regulatory decision.",
+                "",
+                "Recorded findings:",
+                ...findings.map((f, i) =>
+                    `${i + 1}. [${(f.severity || "low").toUpperCase()}] ${f.title}: ${f.detail}`
+                )
+            ].join("\n");
+        }
+
+        if (
+            q.includes("why") ||
+            q.includes("flag") ||
+            q.includes("issue") ||
+            q.includes("problem")
+        ) {
+            if (!findings.length) {
+                return "No flags are stored for this case. That does not mean the document is authentic or compliant; continue the applicable human and official-source checks.";
+            }
+
+            return [
+                `WHY CASE ${caseReference} HAS FINDINGS`,
+                "",
+                `Application category: ${appType}`,
+                `Preliminary risk band: ${riskLevel} (${riskScore}/100)`,
+                "",
+                ...findings.map((f, i) =>
+                    `${i + 1}. ${f.title}\n` +
+                    `Why: ${f.detail}\n` +
+                    `Evidence: ${f.evidence}\n` +
+                    `Recommended action: ${f.recommendation}`
+                ),
+                "",
+                "A flag indicates that a rule needs review. It does not establish that a document is forged or that an institution is non-compliant."
+            ].join("\n\n");
+        }
+
+        return [
+            "I can explain the findings recorded for this case.",
+            "",
+            "Try asking:",
+            "• Why was this application flagged?",
+            "• Explain the evidence for each finding.",
+            "• What should I do to resolve the findings?",
+            "• Has this document been officially verified?",
+            "",
+            "This assistant uses stored case findings and does not contact external authorities."
+        ].join("\n");
+    }
+
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const question = questionInput.value.trim();
+
+        if (!question) {
+            answerBox.textContent = "Enter a question first.";
+            return;
+        }
+
+        answerBox.textContent = answerQuestion(question);
+    });
+
+    document.querySelectorAll(".va-question").forEach(function (button) {
+        button.addEventListener("click", function () {
+            const question = button.dataset.question || "";
+            questionInput.value = question;
+            answerBox.textContent = answerQuestion(question);
+        });
+    });
+})();
+</script>
+
 {% endblock %}
