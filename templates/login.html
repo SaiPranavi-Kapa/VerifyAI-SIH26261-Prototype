@@ -6,93 +6,161 @@
 {% block auth_content %}
 <div class="login-layout">
 
-    <section class="login-hero">
-        <p class="eyebrow">VERIFYAI · COMPLIANCE INTELLIGENCE</p>
-
-        <p class="eyebrow">DOCUMENT TRUST, REIMAGINED</p>
-        <h1>Confidence in<br>every submission.</h1>
-
-        <p>
-            One intelligent workspace to validate documents, explain risk,
-            and move regulatory reviews forward—with humans in control.
-        </p>
-
-        <div class="workflow-grid">
-            <article>
-                <span class="eyebrow">01</span>
-                <h3>Extract</h3>
-            </article>
-            <article>
-                <span class="eyebrow">02</span>
-                <h3>Validate</h3>
-            </article>
-            <article>
-                <span class="eyebrow">03</span>
-                <h3>Review</h3>
-            </article>
+    <section class="login-visual">
+        <div class="brand brand-light">
+            <span class="brand-mark">✦</span>
+            <span>
+                <b>VERIFY<span>AI</span></b>
+                <small>COMPLIANCE INTELLIGENCE</small>
+            </span>
         </div>
 
-        <div class="trust-card">
-            <h2>TRUST ENGINE</h2>
-            <p>OCR / EXTRACT · RISK ENGINE · AUDIT TRAIL</p>
-        </div>
+        <div class="visual-copy">
+            <div class="eyebrow">
+                <span class="eyebrow-line"></span>
+                DOCUMENT TRUST, REIMAGINED
+            </div>
 
-        <p class="eyebrow">BUILT FOR RESPONSIBLE AUTOMATION</p>
-        <p>SIH · 2026</p>
-    </section>
+            <h1>Confidence in<br><em>every submission.</em></h1>
 
-    <section class="login-card">
-        <p class="eyebrow">SECURE IDENTITY GATE</p>
-        <h2>Welcome back.</h2>
-        <p>Sign in to your protected review environment.</p>
+            <p>
+                One intelligent workspace to validate documents, explain risk,
+                and move regulatory reviews forward—with humans in control.
+            </p>
 
-        <form method="POST" action="{{ url_for('login') }}">
-            <label for="username">USERNAME</label>
-            <input
-                id="username"
-                name="username"
-                type="text"
-                placeholder="Enter your username"
-                autocomplete="username"
-                required
-            >
-
-            <label for="password">PASSWORD</label>
-            <input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="Enter your password"
-                autocomplete="current-password"
-                required
-            >
-
-            <p class="helper-text">Protected session · 30-minute idle expiry</p>
-
-            <button class="button button-primary" type="submit">
-                Authenticate
-            </button>
-        </form>
-
-        <div class="demo-access">
-            <p class="eyebrow">JUDGE DEMO ACCESS</p>
-            <h3>SAMPLE ACCOUNTS</h3>
-            <p>Choose a role to autofill its demo username. Use the corresponding demo password from your README.</p>
-
-            <div class="role-buttons">
-                <button type="button" class="role-button" data-username="demo.admin">Admin</button>
-                <button type="button" class="role-button" data-username="demo.officer">Officer</button>
-                <button type="button" class="role-button" data-username="demo.applicant">Applicant</button>
+            <div class="visual-stats">
+                <div>
+                    <b>01 /</b>
+                    <span>Extract</span>
+                </div>
+                <div>
+                    <b>02 /</b>
+                    <span>Validate</span>
+                </div>
+                <div>
+                    <b>03 /</b>
+                    <span>Review</span>
+                </div>
             </div>
         </div>
 
-        <p class="helper-text">
-            Security-first by design · Server-side access checks · Password hashing
-        </p>
+        <div class="orbit-art" aria-hidden="true">
+            <div class="orbit"></div>
+            <div class="orbit orbit-b"></div>
+            <div class="orbit orbit-c"></div>
+            <div class="orbit-core">
+                <i>✦</i>
+                <span>TRUST<br>ENGINE</span>
+            </div>
+            <span class="orbit-tag tag-a">OCR / EXTRACT</span>
+            <span class="orbit-tag tag-b">RISK ENGINE</span>
+            <span class="orbit-tag tag-c">AUDIT TRAIL</span>
+        </div>
 
-        <p class="eyebrow">VERIFYAI / ACCESS NODE 01</p>
-        <p class="eyebrow">FICTIONAL DEMO DATA</p>
+        <div class="visual-foot">
+            <span>BUILT FOR RESPONSIBLE AUTOMATION</span>
+            <span>SIH · 2026</span>
+        </div>
     </section>
 
+    <section class="login-panel">
+        <div class="login-panel-inner">
+            <div class="login-kicker">
+                <span class="tiny-line"></span>
+                SECURE IDENTITY GATE
+            </div>
+
+            <h2>Welcome <span class="accent">back.</span></h2>
+            <p class="muted">Sign in to your protected review environment.</p>
+
+            <form method="POST"
+                  action="{{ url_for('login') }}"
+                  class="login-form">
+
+                <label for="username">USERNAME</label>
+                <div class="input-wrap">
+                    <i>◎</i>
+                    <input
+                        id="username"
+                        name="username"
+                        type="text"
+                        placeholder="Enter your username"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <label for="password">PASSWORD</label>
+                <div class="input-wrap">
+                    <i>⌑</i>
+                    <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <div class="login-options">
+                    <span>● Protected session</span>
+                    <span>30-minute idle expiry</span>
+                </div>
+
+                <button class="btn btn-primary btn-full" type="submit">
+                    Authenticate <span aria-hidden="true">→</span>
+                </button>
+            </form>
+
+            <div class="demo-access">
+                <div class="demo-heading">
+                    <span aria-hidden="true">◈</span>
+                    JUDGE DEMO ACCESS
+                    <span class="demo-label">SAMPLE ACCOUNTS</span>
+                </div>
+
+                <p>
+                    Choose a role to autofill its demo username.
+                    Use the corresponding demo password from your README.
+                </p>
+
+                <div class="role-pills">
+                    <button type="button" data-username="demo.admin">Admin</button>
+                    <button type="button" data-username="demo.officer">Officer</button>
+                    <button type="button" data-username="demo.applicant">Applicant</button>
+                </div>
+            </div>
+
+            <div class="login-assurance">
+                <i aria-hidden="true">✓</i>
+                <span>
+                    <b>Security-first by design</b>
+                    <small>Server-side access checks · Password hashing</small>
+                </span>
+            </div>
+
+            <div class="login-bottom">
+                <span>VERIFYAI / ACCESS NODE 01</span>
+                <span>FICTIONAL DEMO DATA</span>
+            </div>
+        </div>
+    </section>
 </div>
+
+<script>
+document.querySelectorAll("[data-username]").forEach(function (button) {
+    button.addEventListener("click", function () {
+        document.getElementById("username").value =
+            button.getAttribute("data-username");
+
+        document.querySelectorAll("[data-username]").forEach(function (item) {
+            item.classList.remove("selected");
+        });
+
+        button.classList.add("selected");
+        document.getElementById("password").focus();
+    });
+});
+</script>
 {% endblock %}
