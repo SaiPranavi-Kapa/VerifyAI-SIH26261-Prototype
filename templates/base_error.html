@@ -1,8 +1,20 @@
-{% extends "base.html" %} {% block title %}{{ code }}{% endblock %} {% block content %}
-{{ code }}
-REQUEST INTERRUPTED
-Access is protected.
-{{ message }}
 
-Return to safety
+{% extends "base.html" %}
+
+{% block title %}{{ code }} | VerifyAI{% endblock %}
+
+{% block content %}
+<section class="error-page">
+    <p class="eyebrow">REQUEST INTERRUPTED</p>
+
+    <h1>{{ code }}</h1>
+
+    <h2>Access is protected.</h2>
+
+    <p>{{ message }}</p>
+
+    <a class="button button-primary" href="{{ url_for('dashboard') }}">
+        Return to safety
+    </a>
+</section>
 {% endblock %}
