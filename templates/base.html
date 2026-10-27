@@ -4,54 +4,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VerifyAI | Compliance Intelligence</title>
+    <meta name="theme-color" content="#090d19">
+    <title>{% block title %}VerifyAI | Compliance Intelligence{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+
 {% if current_user %}
-<header class="topbar">
-    <a class="brand" href="{{ url_for('dashboard') }}">VERIFYAI</a>
-    <span>COMPLIANCE INTELLIGENCE</span>
-</header>
+<div class="ambient ambient-one"></div>
+<div class="ambient ambient-two"></div>
 
-<main class="workspace">
-    <h1>VERIFYAI WORKSPACE</h1>
-    <nav>
-        <a href="{{ url_for('dashboard') }}">Overview</a>
-        {% if current_user.role in ['admin', 'officer'] %}
-        <a href="{{ url_for('new_case') }}">New verification</a>
-        <a href="{{ url_for('audit') }}">Audit intelligence</a>
-        {% endif %}
-    </nav>
+<div class="app-shell">
 
-    <p>Protected workspace · Role-based access is active · Demo data only</p>
-    <p>{{ current_user.display_name }} · {{ current_user.role|upper }}</p>
+    <aside class="sidebar">
+        <a class="brand" href="{{ url_for('dashboard') }}">
+            <span class="brand-mark">✦</span>
+            <span>
+                <b>VERIFY<span>AI</span></b>
+                <small>COMPLIANCE INTELLIGENCE</small>
+            </span>
+        </a>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert {{ category }}">{{ message }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+        <div class="workspace-label">
+            <span class="live-dot"></span>
+            WORKSPACE
+        </div>
 
-    {% block content %}{% endblock %}
-</main>
+        <nav class="side-nav">
+            <a href="{{ url_for('dashboard') }}" class="active">
+                <i>⌂</i>
+                <span>Overview</span>
+                <span class="nav-arrow">›</span>
+            </a>
 
-<footer>VERIFYAI / SIH26261 CONCEPT PROTOTYPE · Synthetic data only · Not an official AICTE service</footer>
+            {% if current_user.role in ['admin', 'officer'] %}
+            <a href="{{ url_for('new_case') }}">
+                <i>＋</i>
+                <span>New verification</span>
+            </a>
+
+            <a href="{{ url_for('audit') }}">
+                <i>▤</i>
+                <span>Audit intelligence</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="sidebar-spacer"></div>
+
+        <div class="security-card">
+            <div class="security-icon">♧</div>
+            <b>Secure review environment</b>
+            <p>Demo workspace with role-based access and synthetic records.</p>
+            <div class="security-status">
+                <span></span> PROTECTED SESSION
+            </div>
+        </div>
+
+        <div class="sidebar-user">
+            <div class="avatar">
+                {{ current_user.display_name[:1]|upper }}
+            </div>
+            <div class="user-meta">
+                <b>{{ current_user.display_name }}</b>
+                <small>{{ current_user.role|upper }}</small>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-area">
+        <header class="topbar">
+            <div class="breadcrumb">
+                VERIFYAI <i>›</i> <span>COMPLIANCE WORKSPACE</span>
+            </div>
+            <div class="top-actions">
+                <div class="demo-chip">
+                    <span class="live-dot"></span>
+                    DEMO ENVIRONMENT
+                </div>
+                <div class="top-avatar">
+                    {{ current_user.display_name[:1]|upper }}
+                </div>
+            </div>
+        </header>
+
+        <main class="page-content">
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-stack">
+                    {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+
+            <footer class="footer">
+                <span>VERIFYAI <span class="footer-sep">/</span> SIH 2026</span>
+                <span>Synthetic demo data only · Not an official AICTE service</span>
+            </footer>
+
+        </main>
+    </div>
+</div>
 
 {% else %}
+
 <main class="auth-page">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
+        <div class="login-flashes">
             {% for category, message in messages %}
-            <div class="alert {{ category }}">{{ message }}</div>
+            <div class="flash flash-{{ category }}">
+                <span>{{ message }}</span>
+            </div>
             {% endfor %}
+        </div>
         {% endif %}
     {% endwith %}
 
     {% block auth_content %}{% endblock %}
 </main>
+
 {% endif %}
 
 <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
