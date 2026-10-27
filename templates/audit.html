@@ -1,0 +1,19 @@
+{% extends "base.html" %} {% block title %}Audit intelligence{% endblock %} {% block crumb %}AUDIT INTELLIGENCE{% endblock %} {% block content %}
+SECURITY OBSERVABILITY
+Audit intelligence.
+Review the latest actions recorded by the VerifyAI prototype.
+
+{{ 'Hash chain verified' if chain_valid else 'Chain integrity warning' }}{{ 'Checked visible event history' if chain_valid else 'One or more events did not validate' }}
+Tamper-evident, not tamper-proofHash chaining can reveal edits in the checked history. A privileged attacker who controls the database may still rewrite the chain.
+AUDIT MODE
+EVENT LEDGER
+Recent security & workflow events
+Showing up to 250 latest events, newest first.
+
+{{ events|length }} EVENTS
+{% for event in events %}{% else %}{% endfor %}
+EVENT	ACTOR	ENTITY	DETAILS	TIMESTAMP (UTC)	HASH
+{{ event.action|replace('_',' ')|title }}	{{ event.actor_name }}	{{ event.entity_ref }}	{{ event.details }}	{{ event.created_at.replace('T',' ') }}	{{ event.event_hash[:12] }}…
+No events recorded yet.
+EVENT HASHES ENABLEDPrivate demo ledger
+{% endblock %}
