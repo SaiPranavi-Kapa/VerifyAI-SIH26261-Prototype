@@ -9,6 +9,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from flask import (
     Flask, abort, flash, g, redirect, render_template, request,
@@ -23,6 +24,8 @@ UPLOAD_DIR = BASE_DIR / "uploads"
 INSTANCE_DIR.mkdir(exist_ok=True)
 UPLOAD_DIR.mkdir(exist_ok=True)
 
+# IMPORTANT: Set FLASK_SECRET_KEY to a long random value in Render's
+# Environment settings. A generated fallback is for local development only.
 app = Flask(__name__)
 app.config.update(
     SECRET_KEY=os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32),
@@ -147,13 +150,54 @@ def csrf_token():
 
 app.jinja_env.globals["csrf_token"] = csrf_token
 
+def is_same_origin_post():
+    """
+    Compatibility fallback for existing HTML forms that do not yet include
+    a hidden _csrf_token field. A browser must provide a matching Origin or
+    Referer host. Keep token validation as the preferred path.
+    """
+    expected_host = request.host.lower()
+
+    origin = request.headers.get("Origin", "").strip()
+    if origin:
+        try:
+            return urlsplit(origin).netloc.lower() == expected_host
+        except ValueError:
+            return False
+
+    referer = request.headers.get("Referer", "").strip()
+    if referer:
+        try:
+            return urlsplit(referer).netloc.lower() == expected_host
+        except ValueError:
+            return False
+
+    return False
+
+
 @app.before_request
 def security_and_csrf():
     if request.method == "POST":
         sent = request.form.get("_csrf_token", "")
         expected = session.get("_csrf_token", "")
-        if not sent or not expected or not hmac.compare_digest(sent, expected):
-            abort(400, description="Security token missing or expired. Refresh the page and try again.")
+
+        # Preferred protection: validate the session-bound CSRF token.
+        token_is_valid = (
+            bool(sent) and bool(expected)
+            and hmac.compare_digest(sent, expected)
+        )
+
+        # Existing templates may not all have the hidden token field yet.
+        # In that case, allow only browser POSTs with a same-origin Origin or
+        # Referer header; reject requests with neither header.
+        if not token_is_valid and not is_same_origin_post():
+            abort(
+                400,
+                description=(
+                    "Security token missing or expired. Refresh the page and try again."
+                ),
+            )
+
     if session.get("user_id"):
         session.permanent = True
         session["last_seen"] = int(time.time())
