@@ -30,6 +30,11 @@
           action="{{ url_for('new_case') }}"
           enctype="multipart/form-data">
 
+        <!-- Required CSRF security token -->
+        <input type="hidden"
+               name="_csrf_token"
+               value="{{ csrf_token() }}">
+
         <label for="title">APPLICATION TITLE *</label>
         <input
             type="text"
@@ -42,11 +47,21 @@
 
         <label for="category">APPLICATION CATEGORY *</label>
         <select id="category" name="category" required>
-            <option value="Institution Registration">Institution Registration</option>
-            <option value="Extension of Approval">Extension of Approval (EoA)</option>
-            <option value="Change of Institution Details">Change of Institution Details</option>
-            <option value="New Programme Approval">New Programme Approval</option>
-            <option value="Other Approval Change">Other Approval-Related Change</option>
+            <option value="Institution Registration">
+                Institution Registration
+            </option>
+            <option value="Extension of Approval">
+                Extension of Approval (EoA)
+            </option>
+            <option value="Change of Institution Details">
+                Change of Institution Details
+            </option>
+            <option value="New Programme Approval">
+                New Programme Approval
+            </option>
+            <option value="Other Approval Change">
+                Other Approval-Related Change
+            </option>
         </select>
         <p class="helper-text">Category selects the expected-field rules.</p>
 
@@ -90,11 +105,13 @@
             <h3>Document text</h3>
             <p>PDF text extraction and optional image OCR.</p>
         </article>
+
         <article>
             <p class="eyebrow">02 · VALIDATE</p>
             <h3>Rule checks</h3>
             <p>Required fields, dates and duplicate indicators.</p>
         </article>
+
         <article>
             <p class="eyebrow">03 · EXPLAIN</p>
             <h3>Review findings</h3>
