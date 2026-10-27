@@ -1,32 +1,98 @@
-{% extends "base.html" %} {% block title %}Secure access{% endblock %} {% block auth_content %}
-VERIFYAICOMPLIANCE INTELLIGENCE
-DOCUMENT TRUST, REIMAGINED
-Confidence in
-every submission.
-One intelligent workspace to validate documents, explain risk, and move regulatory reviews forward—with humans in control.
 
-01Extract
-02Validate
-03Review
-TRUST
-ENGINE
-OCR / EXTRACTRISK ENGINEAUDIT TRAIL
-BUILT FOR RESPONSIBLE AUTOMATIONSIH · 2026
-SECURE IDENTITY GATE
-Welcome back.
-Sign in to your protected review environment.
+{% extends "base.html" %}
 
-USERNAME
-Enter your username
-PASSWORD
-Enter your password
+{% block title %}Secure Access | VerifyAI{% endblock %}
 
-Protected session30-minute idle expiry
-Authenticate
-JUDGE DEMO ACCESSSAMPLE ACCOUNTS
-Choose a role to autofill its demo username. Passwords are listed in the included README.
+{% block auth_content %}
+<div class="login-layout">
 
-AdminOfficerApplicant
-Security-first by designServer-side access checks · Password hashing · CSRF protection
-VERIFYAI / ACCESS NODE 01FICTIONAL DEMO DATA
+    <section class="login-hero">
+        <p class="eyebrow">VERIFYAI · COMPLIANCE INTELLIGENCE</p>
+
+        <p class="eyebrow">DOCUMENT TRUST, REIMAGINED</p>
+        <h1>Confidence in<br>every submission.</h1>
+
+        <p>
+            One intelligent workspace to validate documents, explain risk,
+            and move regulatory reviews forward—with humans in control.
+        </p>
+
+        <div class="workflow-grid">
+            <article>
+                <span class="eyebrow">01</span>
+                <h3>Extract</h3>
+            </article>
+            <article>
+                <span class="eyebrow">02</span>
+                <h3>Validate</h3>
+            </article>
+            <article>
+                <span class="eyebrow">03</span>
+                <h3>Review</h3>
+            </article>
+        </div>
+
+        <div class="trust-card">
+            <h2>TRUST ENGINE</h2>
+            <p>OCR / EXTRACT · RISK ENGINE · AUDIT TRAIL</p>
+        </div>
+
+        <p class="eyebrow">BUILT FOR RESPONSIBLE AUTOMATION</p>
+        <p>SIH · 2026</p>
+    </section>
+
+    <section class="login-card">
+        <p class="eyebrow">SECURE IDENTITY GATE</p>
+        <h2>Welcome back.</h2>
+        <p>Sign in to your protected review environment.</p>
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <label for="username">USERNAME</label>
+            <input
+                id="username"
+                name="username"
+                type="text"
+                placeholder="Enter your username"
+                autocomplete="username"
+                required
+            >
+
+            <label for="password">PASSWORD</label>
+            <input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                required
+            >
+
+            <p class="helper-text">Protected session · 30-minute idle expiry</p>
+
+            <button class="button button-primary" type="submit">
+                Authenticate
+            </button>
+        </form>
+
+        <div class="demo-access">
+            <p class="eyebrow">JUDGE DEMO ACCESS</p>
+            <h3>SAMPLE ACCOUNTS</h3>
+            <p>Choose a role to autofill its demo username. Use the corresponding demo password from your README.</p>
+
+            <div class="role-buttons">
+                <button type="button" class="role-button" data-username="demo.admin">Admin</button>
+                <button type="button" class="role-button" data-username="demo.officer">Officer</button>
+                <button type="button" class="role-button" data-username="demo.applicant">Applicant</button>
+            </div>
+        </div>
+
+        <p class="helper-text">
+            Security-first by design · Server-side access checks · Password hashing
+        </p>
+
+        <p class="eyebrow">VERIFYAI / ACCESS NODE 01</p>
+        <p class="eyebrow">FICTIONAL DEMO DATA</p>
+    </section>
+
+</div>
 {% endblock %}
