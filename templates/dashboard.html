@@ -1,0 +1,59 @@
+{% extends "base.html" %} {% block title %}Overview{% endblock %} {% block crumb %}OVERVIEW{% endblock %} {% block content %}
+MONITORING CENTER
+Good to see you, {{ current_user.display_name.split(' ')[-1] }}.
+Here’s the live picture of your verification workspace.
+
+New verification
+Demo environment activeAll seeded cases are fictional. Automated findings are review signals—not proof of fraud or authenticity.
+SAFE MODE
+VISIBLE APPLICATIONS
+{{ counts.total }}cases
+Current workspace01
+HIGH-RISK FLAGS
+{{ counts.flagged }}priority
+Review recommended02
+AWAITING ACTION
+{{ counts.pending }}open
+Workflow queue03
+APPROVED
+{{ counts.approved }}closed
+Human decision04
+CASE INTELLIGENCE
+Priority review queue
+Applications ordered by risk and latest activity.
+
+{{ cases|length }} RECORDS
+{% for case in cases %} {% else %}{% endfor %}
+APPLICATION	RISK SIGNAL	STATUS	UPDATED	
+{{ case.reference }}{{ case.title }}	
+{{ case.risk_score }}/100
+{{ case.risk_level }} risk	{{ case.status }}	{{ case.updated_at[:10] }}	
+No applications yet. Create a verification to get started.
+PRIORITY SORT ENABLEDCreate new case
+PROCESS MAP
+Verification flow
+01
+Document intakeUpload & extract text
+02
+Rule validationFindings & risk score
+03
+Human reviewDecision & audit trail
+Start a verification
+VERIFYAI INSIGHT
+Explain every flag.
+Trust the process.
+Each automated finding includes the rule, evidence, and a suggested next action—so reviewers can make informed decisions.
+
+EXPLAINABLE BY DESIGN
+{% if current_user.role in ['admin','officer'] %}
+SYSTEM TRACE
+Recent activity
+View all
+{% for event in recent_events %}
+{{ event.action|replace('_',' ')|title }}{{ event.actor_name }} · {{ event.created_at[11:16] }} UTC
+{% else %}
+Activity appears as you use the system.
+
+{% endfor %}
+{% endif %}
+{% endblock %}
