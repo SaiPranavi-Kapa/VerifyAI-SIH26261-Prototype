@@ -1,84 +1,103 @@
-{% extends "base.html" %} {% block title %}{{ case.reference }}{% endblock %} {% block crumb %}CASE INTELLIGENCE / {{ case.reference }}{% endblock %} {% block content %}
-CASE INTELLIGENCE
-{{ case.reference }} / {{ case.title }}
-{{ case.application_type }} · Submitted {{ case.created_at[:10] }} · Applicant {{ case.applicant_name }}
 
-Overview Export report
-VALIDATION SUMMARY{{ case.status }}
-Risk assessment / rule-based
-Signals help prioritize review. They do not establish fraud or document authenticity.
+{% extends "base.html" %}
 
-{{ case.risk_score }}/100
-{{ case.risk_level }} risk
-{{ case.risk_score }}RISK INDEX
-VAI / {{ case.reference }}
-EXPLAINABLE VALIDATION
-Findings & recommended actions
-{{ findings|length }} configured rule result(s) for this submission.
+{% block title %}Verification Case | VerifyAI{% endblock %}
+{% block crumb %}CASE DETAILS{% endblock %}
 
-RULE ENGINE
-{% for finding in findings %}
-{{ finding.title }}
-{{ finding.severity }}
-{{ finding.detail }}
+{% block content %}
+<section class="page-heading">
+    <p class="eyebrow">AICTE APPLICATION VERIFICATION</p>
+    <h1>Verification case</h1>
+    <p>Review the submitted application, supporting documents and compliance checks.</p>
+</section>
 
-Recommended action{{ finding.recommendation }}
-RULE / {{ finding.code }}
-{% endfor %}
-INTERACTIVE DEMONSTRATION
-What-if simulator
-Test how resolving a finding changes the priority score. This does not alter the saved case.
+<section class="panel">
+    <h2>Application overview</h2>
 
-{% for finding in findings %}{{ finding.title }}{{ finding.severity|upper }} · {{ finding.code }}{% endfor %}
-Simulate resolved findings
-{% if simulation %}
-SIMULATED RESULT — NOT SAVED
-{{ simulation.score }}/100 {{ simulation.level }} risk
-{{ simulation.resolved|length }} finding code(s) marked resolved for this scenario. Verify the underlying document before making a real decision.
+    <div class="detail-grid">
+        <div>
+            <p class="eyebrow">CASE REFERENCE</p>
+            <p>{{ case.case_ref|default(case.id|default('N/A')) }}</p>
+        </div>
 
-PREVIOUS{{ case.risk_score }}{{ simulation.score }}
-{% endif %}
-EVIDENCE-GROUNDED HELPER
-Ask VerifyAI
-Choose a question answered from this case’s actual findings.
+        <div>
+            <p class="eyebrow">INSTITUTION</p>
+            <p>{{ case.institution_name|default('Not provided') }}</p>
+        </div>
 
-Why was this application flagged?What should be checked next?How should I interpret the risk score?
-Select a question to see a case-grounded explanation.
-RECORD DETAILS
-Submission profile
-Reference
-{{ case.reference }}
-Applicant
-{{ case.applicant_name }}
-Category
-{{ case.application_type }}
-Original file
-{{ case.file_name or 'Seeded sample record' }}
-SHA-256 fingerprint
-{{ (case.file_hash[:24] + '…') if case.file_hash else 'Sample record' }}
-Last updated
-{{ case.updated_at[:16].replace('T',' ') }}
-{% if case.stored_name %} Download original file{% endif %}
-{% if current_user.role in ['admin','officer'] %}
-HUMAN IN THE LOOP
-Officer decision
-CASE STATUS
-{{ status }}
-REVIEW NOTE
-{{ case.review_note }}
-Save decision
-{% else %}
-REVIEW STATUS
-{{ case.status }}
-Only assigned staff can record a decision. Contact the review team if a correction is needed.
+        <div>
+            <p class="eyebrow">APPLICATION TYPE</p>
+            <p>{{ case.application_type|default('Extension of Approval') }}</p>
+        </div>
 
-{% if case.review_note %}
-Officer note
-{{ case.review_note }}
+        <div>
+            <p class="eyebrow">STATUS</p>
+            <p>{{ case.status|default('Under review') }}</p>
+        </div>
+    </div>
+</section>
 
-{% endif %}
-{% endif %}
-Human decision required
-Risk scores prioritize attention. They must not be used as the sole basis for approval or rejection.
+<section class="panel">
+    <h2>Document validation</h2>
+    <p>Review the available document-processing results for this case.</p>
 
+    {% if case.documents is defined and case.documents %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>DOCUMENT</th>
+                    <th>TYPE</th>
+                    <th>VALIDATION STATUS</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for document in case.documents %}
+                <tr>
+                    <td>{{ document.filename|default(document.name|default('Document')) }}</td>
+                    <td>{{ document.document_type|default('Supporting document') }}</td>
+                    <td>{{ document.status|default('Pending review') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No document details are available in this view.</p>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <h2>Compliance review</h2>
+    <p>Review extracted fields, document validity and applicable regulatory requirements.</p>
+
+    {% if case.validation_results is defined and case.validation_results %}
+    <ul>
+        {% for result in case.validation_results %}
+        <li>
+            <strong>{{ result.name|default(result.rule|default('Validation check')) }}</strong>
+            — {{ result.status|default('Pending review') }}
+            {% if result.message is defined %}
+            <p>{{ result.message }}</p>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>Compliance results are not available in this view. Review the case records before making a decision.</p>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <h2>Review notice</h2>
+    <p>
+        This is a decision-support prototype using demo data.
+        Automated checks do not constitute official AICTE approval.
+        An authorized reviewer must verify the evidence before making a decision.
+    </p>
+</section>
+
+<a class="button button-primary" href="{{ url_for('dashboard') }}">
+    Return to dashboard
+</a>
 {% endblock %}
