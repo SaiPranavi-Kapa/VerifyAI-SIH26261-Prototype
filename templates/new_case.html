@@ -1,0 +1,32 @@
+{% extends "base.html" %} {% block title %}New verification{% endblock %} {% block crumb %}NEW VERIFICATION{% endblock %} {% block content %}
+DOCUMENT INTAKE
+Start a verification.
+Upload a fictional sample document and let the validation engine inspect it.
+
+Back to overview
+Use synthetic demo documents onlyMaximum 12 MB. Allowed: PDF, PNG, JPG, JPEG, TXT. Files are stored privately and served through an authenticated route.
+PRIVATE INTAKE
+SUBMISSION DETAILS
+Application profile
+Provide the context used by the rule engine.
+
+STEP 01 / 02
+APPLICATION TITLE *
+e.g. Institution registration package
+Use a fictional application title for the demo.
+APPLICATION CATEGORY *
+Institution Registration
+Category selects the expected-field rules.
+DOCUMENT FILE *No file chosenDrop your sample document hereor browse filesPDF / PNG / JPG / TXT · UP TO 12 MBNo file selected
+Private by defaultFiles are not exposed as public static assets. Access is checked on the server.
+Run validation engine
+WHAT HAPPENS NEXT
+OCR
+From file to finding.
+VerifyAI extracts readable text, applies configured rules, and shows its reasoning. A human reviewer makes the final decision.
+
+01ExtractPDF text / optional image OCR
+02ValidateRequired fields, dates, duplicates
+03ExplainFindings, score, recommended action
+Automated checks can miss issues or flag valid files. This is not proof of authenticity.
+{% endblock %}
